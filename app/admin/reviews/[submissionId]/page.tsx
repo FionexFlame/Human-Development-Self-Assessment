@@ -96,9 +96,9 @@ export default async function AdminReviewDetailPage({
       reviewId: matchingReview?.id ?? null,
       aiScore: matchingReview?.ai_score ?? null,
       aiConfidence:
-        row.ai_confidence === null || row.ai_confidence === undefined
+        matchingReview?.ai_confidence === null || matchingReview?.ai_confidence === undefined
             ? null
-            : Number(row.ai_confidence),
+            : Number(matchingReview.ai_confidence),
       aiExplanation: matchingReview?.ai_explanation ?? null,
       humanScore: matchingReview?.human_score ?? null,
       humanNotes: matchingReview?.human_notes ?? null,
