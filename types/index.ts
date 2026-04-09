@@ -68,6 +68,7 @@ export type ReflectionReviewRow = {
 
 export type SubmissionRow = {
   id: string;
+  participant_id: string | null;
   participant_name: string | null;
   participant_email: string | null;
   scoring_mode: "basic" | "ai";
