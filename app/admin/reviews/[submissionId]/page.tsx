@@ -95,7 +95,10 @@ export default async function AdminReviewDetailPage({
       existingNotes: Array.isArray(matchingResult?.notes) ? matchingResult.notes : [],
       reviewId: matchingReview?.id ?? null,
       aiScore: matchingReview?.ai_score ?? null,
-      aiConfidence: matchingReview?.ai_confidence ?? null,
+      aiConfidence:
+        row.ai_confidence === null || row.ai_confidence === undefined
+            ? null
+            : Number(row.ai_confidence),
       aiExplanation: matchingReview?.ai_explanation ?? null,
       humanScore: matchingReview?.human_score ?? null,
       humanNotes: matchingReview?.human_notes ?? null,
