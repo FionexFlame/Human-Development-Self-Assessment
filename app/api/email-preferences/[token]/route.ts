@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
-import { getClientIp, getConsentVersion, getPreferenceSummary, getUserAgent } from "@/lib/compliance";
+import { getClientIp, getConsentVersion, getUserAgent } from "@/lib/compliance";
+
+function getPreferenceSummary({
+  serviceEmails,
+  marketingEmails,
+}: {
+  serviceEmails: boolean;
+  marketingEmails: boolean;
+}) {
+  if (serviceEmails && marketingEmails) {
+    return "You are subscribed to service and marketing emails.";
+  }
+  if (serviceEmails && !marketingEmails) {
+    return "You are subscribed to service emails only.";
+  }
+  if (!serviceEmails && marketingEmails) {
+    return "You are subscribed to marketing emails only.";
+  }
+  return "You are unsubscribed from all emails.";
+}
 
 async function getParticipantByToken(token: string) {
   const supabase = getServiceSupabase();
