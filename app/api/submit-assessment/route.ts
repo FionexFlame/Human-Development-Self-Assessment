@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
     const consentVersion = payload.consentVersion || getConsentVersion();
     const consentStatement =
       "I confirm that I am 18 years of age or older, and I agree to receive my requested assessment results by email and to have my email stored for this assessment workflow.";
-    const ipAddress = getClientIp(request.headers);
-    const userAgent = getUserAgent(request.headers);
+    const ipAddress = getClientIp();
+    const userAgent = getUserAgent();
 
     const results = scoreAssessmentBasic(payload.answers, payload.reflections);
     const finalOverall = getOverallProfile(results);
@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
         .select("id, email, unsubscribe_token, service_emails_opt_in, marketing_emails_opt_in")
         .single();
 
-      if (participantError) throw participantError;
+      if (participantError) {
+        throw participantError;
+      }
 
       const { data, error } = await supabase
         .from("assessment_submissions")
@@ -102,16 +104,21 @@ export async function POST(request: NextRequest) {
         .select("id, public_token")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      submissionId = data.id;
-      resultUrl = `/results/${submissionId}?token=${data.public_token}`;
+      const createdSubmissionId = data.id;
+      const publicToken = data.public_token;
+
+      submissionId = createdSubmissionId;
+      resultUrl = `/results/${createdSubmissionId}?token=${publicToken}`;
 
       try {
         await sendReviewerNotificationEmail({
           participantName: payload.participantName || "",
           participantEmail: payload.participantEmail,
-          submissionId,
+          submissionId: createdSubmissionId,
         });
       } catch (reviewEmailError) {
         console.error("Reviewer notification email failed:", reviewEmailError);
@@ -121,7 +128,7 @@ export async function POST(request: NextRequest) {
         await supabase
           .from("assessment_participants")
           .update({
-            latest_submission_id: submissionId,
+            latest_submission_id: createdSubmissionId,
             name: payload.participantName || null,
           })
           .eq("id", participant.id);
@@ -129,7 +136,7 @@ export async function POST(request: NextRequest) {
         await supabase.from("email_consent_events").insert([
           {
             participant_id: participant.id,
-            submission_id: submissionId,
+            submission_id: createdSubmissionId,
             email: payload.participantEmail,
             consent_type: "service",
             status: "granted",
@@ -143,7 +150,7 @@ export async function POST(request: NextRequest) {
             ? [
                 {
                   participant_id: participant.id,
-                  submission_id: submissionId,
+                  submission_id: createdSubmissionId,
                   email: payload.participantEmail,
                   consent_type: "marketing",
                   status: "granted",
@@ -166,7 +173,7 @@ export async function POST(request: NextRequest) {
 
       await supabase.from("email_events").insert({
         participant_id: participant?.id ?? null,
-        submission_id: submissionId,
+        submission_id: createdSubmissionId,
         email: payload.participantEmail,
         category: "results",
         event_type: canSendServiceEmail ? "attempted" : "suppressed",
@@ -181,14 +188,14 @@ export async function POST(request: NextRequest) {
         await supabase
           .from("assessment_submissions")
           .update({ email_delivery_status: emailStatus })
-          .eq("id", submissionId);
+          .eq("id", createdSubmissionId);
       } else {
         try {
           const sendResult = await sendAssessmentResultEmail({
             to: payload.participantEmail,
             participantName: payload.participantName || "there",
-            submissionId,
-            publicToken: data.public_token,
+            submissionId: createdSubmissionId,
+            publicToken,
             unsubscribeToken,
             overall: finalOverall,
             results,
@@ -206,11 +213,11 @@ export async function POST(request: NextRequest) {
               email_delivery_status: emailStatus,
               emailed_at: sendResult.ok ? new Date().toISOString() : null,
             })
-            .eq("id", submissionId);
+            .eq("id", createdSubmissionId);
 
           await supabase.from("email_events").insert({
             participant_id: participant?.id ?? null,
-            submission_id: submissionId,
+            submission_id: createdSubmissionId,
             email: payload.participantEmail,
             category: "results",
             event_type: sendResult.ok
@@ -231,11 +238,11 @@ export async function POST(request: NextRequest) {
           await supabase
             .from("assessment_submissions")
             .update({ email_delivery_status: "failed" })
-            .eq("id", submissionId);
+            .eq("id", createdSubmissionId);
 
           await supabase.from("email_events").insert({
             participant_id: participant?.id ?? null,
-            submission_id: submissionId,
+            submission_id: createdSubmissionId,
             email: payload.participantEmail,
             category: "results",
             event_type: "failed",
@@ -257,7 +264,7 @@ export async function POST(request: NextRequest) {
 
           await supabase.from("email_events").insert({
             participant_id: participant?.id ?? null,
-            submission_id: submissionId,
+            submission_id: createdSubmissionId,
             email: payload.participantEmail,
             category: "marketing",
             event_type: sendMarketing.ok
@@ -276,7 +283,7 @@ export async function POST(request: NextRequest) {
 
           await supabase.from("email_events").insert({
             participant_id: participant?.id ?? null,
-            submission_id: submissionId,
+            submission_id: createdSubmissionId,
             email: payload.participantEmail,
             category: "marketing",
             event_type: "failed",
