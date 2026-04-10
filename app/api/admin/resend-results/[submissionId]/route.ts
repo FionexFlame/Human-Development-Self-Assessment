@@ -86,14 +86,9 @@ export async function POST(
 
     const isFinal =
       row.review_status === "reviewed" ||
-      row.review_status === "finalized" ||
-      row.human_override === true ||
+      row.human_override !== null ||
       reviewRows.some(
-        (review) =>
-          review.status === "reviewed" ||
-          review.status === "approved" ||
-          review.human_score != null ||
-          review.final_score != null
+        (review) => review.status === "reviewed"
       );
 
     await supabase.from("email_events").insert({
