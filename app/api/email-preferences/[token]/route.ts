@@ -73,8 +73,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       policy_version: getConsentVersion(),
       statement_text: "One-click unsubscribe from non-essential emails.",
       source: "unsubscribe_page",
-      ip_address: getClientIp(request.headers),
-      user_agent: getUserAgent(request.headers),
+      ip_address: getClientIp(),
+      user_agent: getUserAgent(),
     });
     return NextResponse.redirect(new URL(`/email-preferences/${token}?updated=marketing-off`, request.url));
   } catch (error) {
@@ -92,8 +92,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!participant) return NextResponse.json({ error: "Preference link not found." }, { status: 404 });
 
     const now = new Date().toISOString();
-    const ip = getClientIp(request.headers);
-    const userAgent = getUserAgent(request.headers);
+    const ip = getClientIp();
+    const userAgent = getUserAgent();
     const version = getConsentVersion();
     const supabase = getServiceSupabase();
 
