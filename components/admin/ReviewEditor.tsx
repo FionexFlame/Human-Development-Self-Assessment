@@ -3,7 +3,7 @@ import { requireAdminAuth } from "@/lib/auth";
 import { getServiceSupabase } from "@/lib/supabase";
 import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
 import ResendEmailButton from "@/components/admin/ResendEmailButton";
-import { SubmissionRow } from "@/types";
+import { SubmissionRow, DomainResult } from "@/types";
 
 async function getPendingSubmissions() {
   try {
@@ -38,21 +38,16 @@ export default async function AdminReviewsPage() {
   return (
     <main className="container">
       <div className="card">
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Link
-            className="button"
-            href={`/admin/reviews/${submission.id}`}
-          >
-            Open review editor
-          </Link>
-          
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Link className="button" href={`/admin/reviews/${submission.id}`}></Link>
-              Open review editor
-            </Link>
-
-            <Link className="button" href={`/admin/reviews/${submission.id}`}></Link>
-        <div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+          }}
+        >
+          <div>
             <div className="badge">Manual review queue</div>
             <h1 style={{ fontSize: 38, marginBottom: 8 }}>Reflection review admin</h1>
             <p className="small" style={{ maxWidth: 860, lineHeight: 1.7 }}>
@@ -61,18 +56,21 @@ export default async function AdminReviewsPage() {
               written reflections and follow up with final reviewed results later.
             </p>
           </div>
-          <AdminLogoutButton />
+
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <AdminLogoutButton />
+          </div>
         </div>
 
         {submissions.length === 0 ? (
-          <p className="small">
+          <p className="small" style={{ marginTop: 20 }}>
             No pending review submissions found yet.
           </p>
         ) : (
           <div className="grid" style={{ gap: 18, marginTop: 20 }}>
             {submissions.map((submission) => {
-              const domainResults = Array.isArray(submission.domain_results)
-                ? submission.domain_results
+              const domainResults: DomainResult[] = Array.isArray(submission.domain_results)
+                ? (submission.domain_results as DomainResult[])
                 : [];
 
               const reflections =
@@ -96,12 +94,16 @@ export default async function AdminReviewsPage() {
                         {submission.participant_name || "Unnamed participant"}
                       </div>
                       <div className="small">
-                        Submission:{" "}
-                        <Link
-                          href={`/results/${submission.id}?token=${submission.public_token || ""}`}
-                        >
-                          {submission.id}
-                        </Link>
+                        Submission{" "}
+                        {submission.id ? (
+                          <Link
+                            href={`/results/${submission.id}?token=${submission.public_token || ""}`}
+                          >
+                            {submission.id}
+                          </Link>
+                        ) : (
+                          "unknown"
+                        )}
                       </div>
                       <div className="small">
                         Participant email: {submission.participant_email || "unknown"}
@@ -117,7 +119,17 @@ export default async function AdminReviewsPage() {
                       </div>
                     </div>
 
-                    <ResendEmailButton submissionId={submission.id as string} />
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      {submission.id ? (
+                        <Link className="button" href={`/admin/reviews/${submission.id}`}>
+                          Open review editor
+                        </Link>
+                      ) : null}
+
+                      {submission.id ? (
+                        <ResendEmailButton submissionId={submission.id} />
+                      ) : null}
+                    </div>
                   </div>
 
                   <div style={{ marginTop: 16 }}>
@@ -129,7 +141,7 @@ export default async function AdminReviewsPage() {
                       <div className="grid" style={{ gap: 12 }}>
                         {Object.entries(reflections).map(([domainId, text]) => {
                           const matchingResult = domainResults.find(
-                            (result: any) => result.domainId === domainId
+                            (result) => result.domainId === domainId
                           );
 
                           return (
