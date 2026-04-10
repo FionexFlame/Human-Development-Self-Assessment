@@ -4,8 +4,28 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { DOMAINS, SCALE, SCALE_LABELS } from "@/lib/domains";
 import { getOverallProfile, scoreAssessmentBasic } from "@/lib/scoring";
-import type { SubmissionPayload } from "@/types";
+import type {
+  DomainResult,
+  OverallProfile,
+  SubmissionPayload,
+} from "@/types";
 import { getConsentVersion } from "@/lib/compliance";
+
+type SubmitResponse = {
+  submissionId: string | null;
+  resultUrl: string | null;
+  emailStatus:
+    | "pending"
+    | "sent"
+    | "failed"
+    | "suppressed"
+    | "not_requested";
+  results: DomainResult[];
+  overall: OverallProfile;
+  consentVersion: string;
+  scoringModeUsed: string;
+  manualReviewPending: boolean;
+};
 
 export default function AssessmentForm() {
   const [participantName, setParticipantName] = useState("");
@@ -16,7 +36,7 @@ export default function AssessmentForm() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [reflections, setReflections] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [serverResult, setServerResult] = useState<any>(null);
+  const [serverResult, setServerResult] = useState<SubmitResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const totalQuestions = useMemo(
@@ -64,6 +84,8 @@ export default function AssessmentForm() {
       const payload: SubmissionPayload = {
         participantName,
         participantEmail,
+        isAdultConfirmed,
+        ageConfirmed18Plus: isAdultConfirmed,
         consentToEmail,
         marketingConsent,
         consentVersion: getConsentVersion(),
@@ -83,7 +105,7 @@ export default function AssessmentForm() {
         throw new Error(json.error || "Failed to submit assessment.");
       }
 
-      setServerResult(json);
+      setServerResult(json as SubmitResponse);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error.");
     } finally {
@@ -91,8 +113,8 @@ export default function AssessmentForm() {
     }
   }
 
-  const shownResults = serverResult?.results ?? localResults;
-  const shownOverall = serverResult?.overall ?? localOverall;
+  const shownResults: DomainResult[] = serverResult?.results ?? localResults;
+  const shownOverall: OverallProfile = serverResult?.overall ?? localOverall;
 
   return (
     <div className="grid" style={{ gap: 24 }}>
@@ -140,9 +162,7 @@ export default function AssessmentForm() {
               onChange={(e) => setIsAdultConfirmed(e.target.checked)}
               style={{ marginTop: 2 }}
             />
-            <span>
-              I confirm that I am 18 years of age or older.
-            </span>
+            <span>I confirm that I am 18 years of age or older.</span>
           </label>
 
           <p className="small" style={{ marginLeft: 26, marginTop: -4, color: "#64748b" }}>
@@ -321,7 +341,7 @@ export default function AssessmentForm() {
             </tr>
           </thead>
           <tbody>
-            {shownResults.map((result: any) => (
+            {shownResults.map((result) => (
               <tr key={result.domainId}>
                 <td>{result.title}</td>
                 <td>{result.coreAvg}</td>
