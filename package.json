@@ -10,8 +10,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
+    "@vercel/analytics": "^2.0.1",
     "lucide-react": "^0.511.0",
-    "next": "15.5.7",
+    "next": "^15.5.9",
     "nodemailer": "^6.9.16",
     "openai": "^4.104.0",
     "react": "19.0.0",
